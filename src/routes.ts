@@ -8,12 +8,14 @@ import { createUserHandler } from "./controller/user.controller";
 import requireUser from "./middleware/requireUser";
 import validateResource from "./middleware/validateResource";
 import { createSessionSchema } from "./schema/session.schema";
-import { createUserSchema } from "./schema/user.schema";
+import { createUserSchema, registerUserSchema } from "./schema/user.schema";
 import { getPrivacyPolicyHandler, getTermsAndConditionsHandler } from "./controller/site.controller";
 import { get } from "config";
 import { createProductSchema, deleteProductSchema, getProductSchema, updateProductSchema } from "./schema/product.schema";
 import { createProductHandler, deleteProductHandler, getProductHandler, updateProductHandler } from "./controller/product.controller";
+import { AuthController } from "./controller/auth.controller";
 export function routes(app: Express) {
+  const authController = new AuthController();
   app.get("/api", (req, res) => {
     res.send("Hello World!");
   });
@@ -56,6 +58,9 @@ export function routes(app: Express) {
     [requireUser, validateResource(deleteProductSchema)],
     deleteProductHandler
   );
+
+  app.post('/api/register',validateResource(registerUserSchema), authController.register);
+  app.post('/api/login', authController.login);
 }
 
 export default routes;

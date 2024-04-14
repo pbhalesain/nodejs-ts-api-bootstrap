@@ -19,3 +19,18 @@ export const createUserSchema = object({
     path: ["password", "passwordConfirmation"],
   }),
 });
+
+export const registerUserSchema = object({
+  body: object({
+    name: string({
+      required_error: "name is required",
+    }),
+    password: string({
+      required_error: "password is required",
+    }).min(8, "password must be at least 8 characters"),
+   
+    email: string({
+      required_error: "email is required",
+    }).email("email must be a valid email address"),
+  }),
+});

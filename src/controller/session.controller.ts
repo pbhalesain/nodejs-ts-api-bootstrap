@@ -27,7 +27,7 @@ export async function createSessionHandler(req: Request, res: Response) {
   const refreshToken = signJwt(
     { ...user, session: session._id },
     "accessTokenPrivateKey",
-    { expiresIn: accessTokenExpiresIn }
+    { expiresIn: refreshTokenExpiresIn }
   );
 
   //return an access and refresh token
