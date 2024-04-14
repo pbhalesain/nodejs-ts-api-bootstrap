@@ -1,30 +1,58 @@
-import dotenv from "dotenv";
-dotenv.config();
-import config from "config";
-import express, { Request, Response, NextFunction } from "express";
-import deserializeUser from "./middleware/deserializeUser";
-import connect from "./utils/connect";
-import logger from "./utils/logger";
-import router from "./router";
+import express, { Application, } from "express";
+import Controller from "./utils/interfaces/controller.interface";
+import Database from "./utils/db.connect";
+import helmet from "helmet";
+import cors from "cors";
+import morgan from "morgan";
+import compression from "compression";
+import ErrorMiddleware from './middleware/error.middleware';
 
-const port = config.get<number>("port");
-const app = express();
-app.use(express.json());
-const publicRoutes = ['/api/register', '/api/login', '/'];
 
-// Routes
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (publicRoutes.some((route) => req.path.startsWith(route))) {
-    // This route is public, bypass authentication
-    return next();
+/**
+ * Represents the main application class that initializes the Express server, sets up middleware, and manages the database connection.
+ */
+class App {
+  public express: Application;
+  public port: number;
+
+  constructor(controllers: Controller[], port: number) {
+    this.express = express();
+    this.port = port;
+
+    this.initialiseDatabaseConnection();
+    this.initialiseMiddleware();
+    this.initialiseControllers(controllers);
+    this.initialiseErrorHandling();
   }
-  // This route requires authentication, use the AuthMiddleware
-  deserializeUser;
-});
 
-app.use(router);
+  private initialiseDatabaseConnection() {
+    Database.getInstance().getConnection();
+  }
 
-app.listen(1337, async () => {
-  logger.info(`App is running at http://localhost:${port}`);
-  await connect();
-});
+  private initialiseMiddleware() {
+    this.express.use(helmet());
+    this.express.use(cors());
+    this.express.use(morgan('dev'));
+    this.express.use(express.json());
+    this.express.use(express.urlencoded({ extended: false }));
+    this.express.use(compression());
+  }
+
+  private initialiseErrorHandling() {
+    this.express.use(ErrorMiddleware);
+  }
+  private initialiseControllers(controllers: Controller[]) {
+    controllers.forEach((controller: Controller) => {
+      this.express.use('/api/v1', controller.router);
+    });
+  }
+
+
+  public listen(): void {
+    this.express.listen(this.port, () => {
+      console.log(`App listening on the port ${this.port}`);
+    });
+  }
+}
+
+export default App;
